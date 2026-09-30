@@ -1,0 +1,5 @@
+com/famille/shoppinglist/model/Item.class
+com/famille/shoppinglist/config/WebSocketConfig.class
+com/famille/shoppinglist/controller/ItemController.class
+com/famille/shoppinglist/repository/ItemRepository.class
+com/famille/shoppinglist/ShoppingListApplication.class
