@@ -45,4 +45,13 @@ public class ItemController {
         itemRepository.deleteById(id);
         return itemRepository.findAll();
     }
+    @MessageMapping("/clear-completed")
+    @SendTo("/topic/items")
+    public List<Item> clearCompleted() {
+        List<Item> completedItems = itemRepository.findAll().stream()
+                .filter(Item::isCompleted)
+                .toList();
+        itemRepository.deleteAll(completedItems);
+        return itemRepository.findAll();
+    }
 }

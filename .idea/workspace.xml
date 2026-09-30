@@ -5,8 +5,13 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="3999a5a5-f261-48c6-bde9-b700628be128" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/frontend/postcss.config.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/tailwind.config.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/resources/application.properties" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/famille/shoppinglist/controller/ItemController.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/famille/shoppinglist/controller/ItemController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/target/classes/com/famille/shoppinglist/controller/ItemController.class" beforeDir="false" afterPath="$PROJECT_DIR$/backend/target/classes/com/famille/shoppinglist/controller/ItemController.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/.vite/deps/_metadata.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/.vite/deps/package.json" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
