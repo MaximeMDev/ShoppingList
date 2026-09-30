@@ -13,7 +13,7 @@ import {
   Sparkles
 } from 'lucide-react';
 
-const API_BASE_URL = 'http://localhost:8080';
+const API_BASE_URL = 'https://shoppinglist-backend.onrender.com';
 
 const CATEGORIES = [
   'Fruits & Légumes',
