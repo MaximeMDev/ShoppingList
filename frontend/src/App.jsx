@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import {
@@ -10,7 +10,8 @@ import {
   User,
   CheckCheck,
   Layers,
-  Sparkles
+  Sparkles,
+  WifiOff
 } from 'lucide-react';
 
 const API_BASE_URL = 'https://shoppinglist-backend.onrender.com';
@@ -31,41 +32,57 @@ export default function App() {
   const [newItemName, setNewItemName] = useState('');
   const [selectedCategory, setSelectedCategory] = useState(CATEGORIES[0]);
   const [userName, setUserName] = useState(() => localStorage.getItem('shopping_user') || 'Maxime');
-  const [stompClient, setStompClient] = useState(null);
+  const [isConnected, setIsConnected] = useState(false);
+
+  const stompClientRef = useRef(null);
 
   // Sauvegarde locale du prénom
   useEffect(() => {
     localStorage.setItem('shopping_user', userName);
   }, [userName]);
 
-  // Connexion WebSocket
+  // Chargement initial + Connexion WebSocket sécurisée
   useEffect(() => {
+    // 1. Récupération initiale via REST
     fetch(`${API_BASE_URL}/api/items`)
       .then((res) => res.json())
       .then((data) => setItems(data))
       .catch((err) => console.error('Erreur chargement initial:', err));
 
-    const socket = new SockJS(`${API_BASE_URL}/ws-shopping`);
+    // 2. Initialisation STOMP
     const client = new Client({
-      webSocketFactory: () => socket,
+      webSocketFactory: () => new SockJS(`${API_BASE_URL}/ws-shopping`),
+      reconnectDelay: 5000,
       onConnect: () => {
+        setIsConnected(true);
         client.subscribe('/topic/items', (message) => {
           setItems(JSON.parse(message.body));
         });
       },
+      onDisconnect: () => {
+        setIsConnected(false);
+      },
+      onStompError: (frame) => {
+        console.error('Erreur STOMP:', frame);
+        setIsConnected(false);
+      },
     });
 
     client.activate();
-    setStompClient(client);
+    stompClientRef.current = client;
 
-    return () => client.deactivate();
+    return () => {
+      if (stompClientRef.current) {
+        stompClientRef.current.deactivate();
+      }
+    };
   }, []);
 
   const handleAddItem = (e) => {
     e.preventDefault();
-    if (!newItemName.trim() || !stompClient) return;
+    if (!newItemName.trim() || !isConnected || !stompClientRef.current) return;
 
-    stompClient.publish({
+    stompClientRef.current.publish({
       destination: '/app/add',
       body: JSON.stringify({
         name: newItemName.trim(),
@@ -78,18 +95,26 @@ export default function App() {
   };
 
   const handleToggleItem = (id) => {
-    if (!stompClient) return;
-    stompClient.publish({ destination: '/app/toggle', body: JSON.stringify(id) });
+    if (!isConnected || !stompClientRef.current) return;
+    stompClientRef.current.publish({
+      destination: '/app/toggle',
+      body: JSON.stringify(id),
+    });
   };
 
   const handleDeleteItem = (id) => {
-    if (!stompClient) return;
-    stompClient.publish({ destination: '/app/delete', body: JSON.stringify(id) });
+    if (!isConnected || !stompClientRef.current) return;
+    stompClientRef.current.publish({
+      destination: '/app/delete',
+      body: JSON.stringify(id),
+    });
   };
 
   const handleClearCompleted = () => {
-    if (!stompClient) return;
-    stompClient.publish({ destination: '/app/clear-completed' });
+    if (!isConnected || !stompClientRef.current) return;
+    stompClientRef.current.publish({
+      destination: '/app/clear-completed',
+    });
   };
 
   // Séparation À prendre / Panier
@@ -105,7 +130,15 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-100 text-slate-900 pb-28 font-sans antialiased selection:bg-indigo-500 selection:text-white">
-      {/* En-tête Mobile Fixe avec Effet de Flou */}
+      {/* Bandeau d'état si le serveur charge ou est déconnecté */}
+      {!isConnected && (
+        <div className="bg-amber-500 text-white text-xs py-1.5 px-4 text-center font-semibold flex items-center justify-center gap-1.5 shadow-inner">
+          <WifiOff className="w-3.5 h-3.5 animate-pulse" />
+          Connexion au serveur en cours... (Réveil du backend)
+        </div>
+      )}
+
+      {/* En-tête Mobile Fixe */}
       <header className="sticky top-0 z-20 bg-white/90 backdrop-blur-md border-b border-slate-200/80 px-4 py-3 shadow-xs">
         <div className="max-w-md mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2.5">
@@ -137,7 +170,7 @@ export default function App() {
       {/* Contenu Principal Mobile */}
       <main className="max-w-md mx-auto px-3.5 pt-3.5 space-y-4">
 
-        {/* Formulaire d'Ajout Mobile (Champs Larges pour les Doigts) */}
+        {/* Formulaire d'Ajout Mobile */}
         <form onSubmit={handleAddItem} className="bg-white p-3.5 rounded-2xl shadow-sm border border-slate-200/80 space-y-3">
           <div className="flex gap-2">
             <input
@@ -145,17 +178,19 @@ export default function App() {
               value={newItemName}
               onChange={(e) => setNewItemName(e.target.value)}
               placeholder="Ajouter un article..."
-              className="flex-1 px-3.5 py-3 bg-slate-50 border border-slate-200/80 rounded-xl text-base outline-none focus:border-indigo-500 focus:bg-white transition-all placeholder:text-slate-400"
+              disabled={!isConnected}
+              className="flex-1 px-3.5 py-3 bg-slate-50 border border-slate-200/80 rounded-xl text-base outline-none focus:border-indigo-500 focus:bg-white transition-all placeholder:text-slate-400 disabled:opacity-50"
             />
             <button
               type="submit"
-              className="px-4 py-3 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-semibold rounded-xl text-sm flex items-center justify-center gap-1 transition-all shadow-md shadow-indigo-100 shrink-0"
+              disabled={!isConnected}
+              className="px-4 py-3 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-semibold rounded-xl text-sm flex items-center justify-center gap-1 transition-all shadow-md shadow-indigo-100 shrink-0 disabled:opacity-50"
             >
               <Plus className="w-5 h-5" />
             </button>
           </div>
 
-          {/* Saisie du rayon par défilement horizontal fluide */}
+          {/* Saisie du rayon */}
           <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none snap-x">
             {CATEGORIES.map((cat) => (
               <button
@@ -228,7 +263,7 @@ export default function App() {
           )}
         </div>
 
-        {/* Section 2 : Dans le Panier (Cochés) */}
+        {/* Section 2 : Dans le Panier */}
         {completedItems.length > 0 && (
           <div className="space-y-3 pt-3">
             <div className="flex items-center justify-between px-1">
@@ -236,7 +271,6 @@ export default function App() {
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> Dans le panier ({completedItems.length})
               </h2>
 
-              {/* Bouton de validation globale mobile */}
               <button
                 onClick={handleClearCompleted}
                 className="text-xs font-bold text-emerald-700 bg-emerald-100/80 hover:bg-emerald-200/80 px-3 py-1.5 rounded-xl border border-emerald-200 flex items-center gap-1 transition-all active:scale-95"
