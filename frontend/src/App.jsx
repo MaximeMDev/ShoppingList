@@ -14,7 +14,7 @@ import {
   WifiOff
 } from 'lucide-react';
 
-const API_BASE_URL = 'https://shoppinglist-backend.onrender.com';
+const API_BASE_URL = 'https://shoppinglist-backend-qzny.onrender.com';
 
 const CATEGORIES = [
   'Fruits & Légumes',
